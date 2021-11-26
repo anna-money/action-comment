@@ -7,10 +7,12 @@ inputs:
     required: true
   search_key:
     description: Key to find existing comment
-    required: true
+    required: false
+    default: ''
   timezone:
     description: Timzone for update timestamp
-    required: true
+    required: false
+    default: 'UTC'
 
 runs:
   using: composite
