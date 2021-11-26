@@ -1,5 +1,9 @@
 # Add or update comment GitHub Action
+
 ## Example
+
+Write in your workflow:
+
 ```yml
 upsert-comment:
   runs-on: ubuntu-latest
@@ -14,4 +18,6 @@ upsert-comment:
           <coverage report>
           ```
 ```
+
+Result:
 ![example](images/example.png)
