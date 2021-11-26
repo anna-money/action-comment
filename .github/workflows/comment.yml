@@ -1,0 +1,48 @@
+name: Save comment
+
+on:
+  workflow_call:
+    inputs:
+      text:
+        required: true
+        type: string
+      search_key:
+        required: true
+        type: string
+      timezone:
+        required: true
+        type: string
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      # Find
+      - name: Find comment by "${{ inputs.search_key }}"
+        uses: peter-evans/find-comment@84b0b4ae47adcf63514397af4669636b9ac722c1
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: ${{ inputs.search_key }}
+      # Create
+      - name: Post new comment
+        if: ${{ steps.find-comment.outputs.comment-id == 0 }}
+        uses: peter-evans/create-or-update-comment@5221bf4aa615e5c6e95bb142f9673a9c791be2cd
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ inputs.text }}
+      # Update
+      - name: Get current date
+        if: ${{ steps.find-comment.outputs.comment-id != 0 }}
+        id: current-date
+        run: echo "::set-output name=date::$(TZ=":${{ inputs.timezone }}" date +'%Y-%m-%d %T %z')"
+      - name: Update existing comment
+        if: ${{ steps.find-comment.outputs.comment-id != 0 }}
+        uses: peter-evans/create-or-update-comment@5221bf4aa615e5c6e95bb142f9673a9c791be2cd
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            ${{ inputs.text }}
+            UPD: ${{ steps.current-date.outputs.date }}
