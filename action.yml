@@ -7,8 +7,7 @@ inputs:
     required: true
   search_key:
     description: Key to find existing comment
-    required: false
-    default: ''
+    required: true
   timezone:
     description: Timzone for update timestamp
     required: false

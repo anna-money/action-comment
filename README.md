@@ -1,5 +1,13 @@
 # Add or update comment GitHub Action
 
+This action allows you to create or update comment in your PR.
+
+## Inputs
+
+1. `text` (string, required) - text to place in comment
+2. `search_key` (string, required) - text to search existing comment
+3. `timezone` (string, default: `'UTC'`) - timezone for comment update timestamp
+
 ## Example
 
 Write in your workflow:
