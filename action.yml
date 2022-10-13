@@ -36,7 +36,7 @@ runs:
       if: ${{ steps.find-comment.outputs.comment-id != 0 }}
       id: current-date
       shell: bash
-      run: echo "::set-output name=date::$(TZ=":${{ inputs.timezone }}" date +'%Y-%m-%d %T %z')"
+      run: echo "date=$(TZ=":${{ inputs.timezone }}" date +'%Y-%m-%d %T %z')" >> $GITHUB_OUTPUT
     - name: Update existing comment
       if: ${{ steps.find-comment.outputs.comment-id != 0 }}
       uses: peter-evans/create-or-update-comment@5221bf4aa615e5c6e95bb142f9673a9c791be2cd
