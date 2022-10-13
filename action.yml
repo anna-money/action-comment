@@ -18,7 +18,7 @@ runs:
   steps:
     # Find
     - name: Find comment by "${{ inputs.search_key }}"
-      uses: peter-evans/find-comment@84b0b4ae47adcf63514397af4669636b9ac722c1
+      uses: peter-evans/find-comment@v2
       id: find-comment
       with:
         issue-number: ${{ github.event.pull_request.number }}
@@ -27,7 +27,7 @@ runs:
     # Create
     - name: Post new comment
       if: ${{ steps.find-comment.outputs.comment-id == 0 }}
-      uses: peter-evans/create-or-update-comment@5221bf4aa615e5c6e95bb142f9673a9c791be2cd
+      uses: peter-evans/create-or-update-comment@v2
       with:
         issue-number: ${{ github.event.pull_request.number }}
         body: ${{ inputs.text }}
@@ -39,7 +39,7 @@ runs:
       run: echo "date=$(TZ=":${{ inputs.timezone }}" date +'%Y-%m-%d %T %z')" >> $GITHUB_OUTPUT
     - name: Update existing comment
       if: ${{ steps.find-comment.outputs.comment-id != 0 }}
-      uses: peter-evans/create-or-update-comment@5221bf4aa615e5c6e95bb142f9673a9c791be2cd
+      uses: peter-evans/create-or-update-comment@v2
       with:
         comment-id: ${{ steps.find-comment.outputs.comment-id }}
         edit-mode: replace
