@@ -7,6 +7,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+# Dependabot PRs get a read-only token unless write scopes are declared
+permissions:
+  contents: read
+  pull-requests: write
+
 env:
   SEARCH_KEY: "Test comment"
 
