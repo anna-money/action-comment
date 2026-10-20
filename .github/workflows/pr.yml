@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       # Start from no test comment so every run exercises the create path
       - name: Delete previous test comment
         uses: actions/github-script@v9
