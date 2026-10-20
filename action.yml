@@ -16,33 +16,41 @@ inputs:
 runs:
   using: composite
   steps:
-    # Find
-    - name: Find comment by "${{ inputs.search_key }}"
-      uses: peter-evans/find-comment@v3
-      id: find-comment
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        comment-author: 'github-actions[bot]'
-        body-includes: ${{ inputs.search_key }}
-    # Create
-    - name: Post new comment
-      if: ${{ steps.find-comment.outputs.comment-id == 0 }}
-      uses: peter-evans/create-or-update-comment@v4
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body: ${{ inputs.text }}
-    # Update
     - name: Get current date
-      if: ${{ steps.find-comment.outputs.comment-id != 0 }}
       id: current-date
       shell: bash
-      run: echo "date=$(TZ=":${{ inputs.timezone }}" date +'%Y-%m-%d %T %z')" >> $GITHUB_OUTPUT
-    - name: Update existing comment
-      if: ${{ steps.find-comment.outputs.comment-id != 0 }}
-      uses: peter-evans/create-or-update-comment@v4
+      env:
+        TIMEZONE: ${{ inputs.timezone }}
+      run: echo "date=$(TZ=":$TIMEZONE" date +'%Y-%m-%d %T %z')" >> "$GITHUB_OUTPUT"
+    - name: Create or update comment by "${{ inputs.search_key }}"
+      uses: actions/github-script@v9
+      env:
+        TEXT: ${{ inputs.text }}
+        SEARCH_KEY: ${{ inputs.search_key }}
+        UPD_DATE: ${{ steps.current-date.outputs.date }}
       with:
-        comment-id: ${{ steps.find-comment.outputs.comment-id }}
-        edit-mode: replace
-        body: |
-          ${{ inputs.text }}
-          UPD: ${{ steps.current-date.outputs.date }}
+        script: |
+          const { TEXT, SEARCH_KEY, UPD_DATE } = process.env;
+          const comments = await github.paginate(github.rest.issues.listComments, {
+            ...context.repo,
+            issue_number: context.issue.number,
+            per_page: 100,
+          });
+          const existing = comments.find(
+            (c) => c.user.login === 'github-actions[bot]' && c.body.includes(SEARCH_KEY),
+          );
+          if (!existing) {
+            const { data } = await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body: TEXT,
+            });
+            core.info(`Created comment ${data.html_url}`);
+          } else {
+            const { data } = await github.rest.issues.updateComment({
+              ...context.repo,
+              comment_id: existing.id,
+              body: `${TEXT}\nUPD: ${UPD_DATE}`,
+            });
+            core.info(`Updated comment ${data.html_url}`);
+          }
