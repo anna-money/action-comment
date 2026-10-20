@@ -7,16 +7,60 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+env:
+  SEARCH_KEY: "Test comment"
+
 jobs:
   test:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Run local action
+      # Start from no test comment so every run exercises the create path
+      - name: Delete previous test comment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            for (const c of comments) {
+              if (c.user.login === 'github-actions[bot]' && c.body.includes(process.env.SEARCH_KEY)) {
+                await github.rest.issues.deleteComment({ ...context.repo, comment_id: c.id });
+              }
+            }
+      - name: Create comment
         uses: ./
-        id: bump
         with:
           timezone: "Europe/London"
-          search_key: "Test comment"
-          text: Test comment
+          search_key: ${{ env.SEARCH_KEY }}
+          text: "Test comment: created (run ${{ github.run_id }})"
+      - name: Update comment
+        uses: ./
+        with:
+          timezone: "Europe/London"
+          search_key: ${{ env.SEARCH_KEY }}
+          text: "Test comment: updated (run ${{ github.run_id }})"
+      - name: Check comment was updated in place
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const matches = comments.filter(
+              (c) => c.user.login === 'github-actions[bot]' && c.body.includes(process.env.SEARCH_KEY),
+            );
+            if (matches.length !== 1) {
+              core.setFailed(`Expected 1 test comment, found ${matches.length}`);
+              return;
+            }
+            const body = matches[0].body;
+            core.info(body);
+            if (!/^Test comment: updated \(run \d+\)\nUPD: \d{4}-\d\d-\d\d \d\d:\d\d:\d\d [+-]\d{4}$/.test(body)) {
+              core.setFailed(`Unexpected comment body: ${JSON.stringify(body)}`);
+            }
